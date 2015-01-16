@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define BUFSIZE 1024
+char temp[BUFSIZE];
+void append(FILE *source, FILE *dest);
+
+int main(int argc, char *argv[])
+{
+    FILE *fa, *fr;
+    int file;
+
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s source-file(s) destination-file\n", argv[0]);
+        exit(1);
+    }
+    if ((fa = fopen(argv[argc - 1], "a")) == NULL) {
+        fprintf(stderr, "Can't open %s\n", argv[argc - 1]);
+        exit(2);
+    }
+    if (setvbuf(fa, NULL, _IOFBF, BUFSIZE) != 0) {
+        fputs("Can't create output buffer\n", stderr);
+        exit(3);
+    }
+    for (file = 1; file < argc - 1; file++)
+    {
+        if (strcmp(argv[argc - 1], argv[file]) == 0)
+            fputs("Can't append file to itself\n", stderr);
+        else if ((fr = fopen(argv[file], "r")) == NULL)
+            fprintf(stderr, "Can't open %s\n", argv[file]);
+        else
+        {
+            if (setvbuf(fr, NULL, _IOFBF, BUFSIZE) != 0) {
+                fputs("Can't create output buffer\n", stderr);
+                continue;
+            }
+            append(fr, fa);
+            if (ferror(fr) != 0)
+                fprintf(stderr, "Error in reading file %s.\n", argv[file]);
+            if (ferror(fa) != 0)
+                fprintf(stderr, "Error in writing file %s.\n", argv[file - 1]);
+            fclose(fr);
+        }
+    }
+    fclose(fa);
+    return 0;
+}
+
+void append(FILE *source, FILE *dest)
+{
+    size_t bytes;
+    extern char temp[];
+
+    while ((bytes = fread(temp, sizeof(char), BUFSIZE, source)) > 0)
+        fwrite(temp, sizeof(char), bytes, dest);
+}
+#include <stdio.h>
+#define MAXLINE 20
+int main(void)
+{
+    char line[MAXLINE];
+
+    while (fgets(line, MAXLINE, stdin) != NULL && line[0] != '\n')
+        fputs(line, stdout);
+    return 0;
+}
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char *argv[])
+{
+    FILE *in, *out;
+    int ch;
+    char name[40];
+    int count = 0;
+
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s filename\n", argv[0]);
+        exit(1);
+    }
+    if ((in = fopen(argv[1], "r")) == NULL)
+    {
+        fprintf(stderr, "Cannot open the file \"%s\"\n", argv[1]);
+        exit(2);
+    }
+    strcpy(name, argv[1]);
+    strcat(name, ".red");
+    if ((out = fopen(name, "w")) == NULL) {
+        fprintf(stderr, "Can't create output file.\n");
+        exit(3);
+    }
+    while ((ch = getc(in)) != EOF)
+        if (count++ % 3 == 0)
+            putc(ch, out);
+    if (fclose(in) != 0 || fclose(out) != 0)
+        fprintf(stderr, "Error in closing files\n");
+    return 0;
+}
